@@ -31,6 +31,7 @@ public class Tokenizer {
   private final Pattern INDEXED_PLACEHOLDER_PATTERN;
   private final Pattern IDENT_NAMED_PLACEHOLDER_PATTERN;
   private final Pattern STRING_NAMED_PLACEHOLDER_PATTERN;
+  private final Pattern ENCLOSED_NAMED_PLACEHOLDER_PATTERN;
 
   /**
    * @param cfg {String[]} cfg.reservedWords Reserved words in SQL {String[]}
@@ -90,6 +91,9 @@ public class Tokenizer {
         RegexUtil.createPlaceholderRegexPattern(
             new JSLikeList<>(cfg.namedPlaceholderTypes),
             RegexUtil.createStringPattern(new JSLikeList<>(cfg.stringTypes)));
+    this.ENCLOSED_NAMED_PLACEHOLDER_PATTERN =
+        RegexUtil.createEnclosedPlaceholderRegextPattern(
+            new JSLikeList<>(cfg.enclosedNamedPlaceholderTypes), "[a-zA-Z0-9._,=$\\s]+");
   }
 
   /**
@@ -180,7 +184,8 @@ public class Tokenizer {
     return Util.firstNotnull(
         () -> this.getIdentNamedPlaceholderToken(input),
         () -> this.getStringNamedPlaceholderToken(input),
-        () -> this.getIndexedPlaceholderToken(input));
+        () -> this.getIndexedPlaceholderToken(input),
+        () -> this.getEnclosedNamedPlaceholderToken(input));
   }
 
   private Token getIdentNamedPlaceholderToken(String input) {
@@ -200,6 +205,35 @@ public class Tokenizer {
   private Token getIndexedPlaceholderToken(String input) {
     return this.getPlaceholderTokenWithKey(
         input, this.INDEXED_PLACEHOLDER_PATTERN, v -> v.substring(1));
+  }
+
+  private Token getEnclosedNamedPlaceholderToken(String input) {
+    Pattern pattern = ENCLOSED_NAMED_PLACEHOLDER_PATTERN;
+
+    return getPlaceholderTokenWithKey(
+        input,
+        pattern,
+        v -> {
+          Matcher matcher = pattern.matcher(v);
+
+          // Exceptional case guard, in case of bugs elsewhere in the program.
+          if (!matcher.find()) {
+            return null;
+          }
+
+          // Exceptional case guard, in case of ENCLOSED_NAMED_PLACEHOLDER_PATTERN is erroneous.
+          String open = matcher.group(2);
+          String close = matcher.group(4);
+          if (open == null || close == null) {
+            return null;
+          }
+
+          int length = v.length();
+          String key = v.substring(open.length(), length - close.length());
+          String quote = v.substring(length - close.length());
+
+          return getEscapedPlaceholderKey(key, quote);
+        });
   }
 
   private Token getPlaceholderTokenWithKey(

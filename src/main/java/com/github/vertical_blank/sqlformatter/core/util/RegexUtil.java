@@ -1,6 +1,7 @@
 package com.github.vertical_blank.sqlformatter.core.util;
 
 import com.github.vertical_blank.sqlformatter.languages.StringLiteral;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,7 +68,7 @@ public class RegexUtil {
       return RegexUtil.escapeRegExp(paren);
     } else {
       // longer word
-      return "\\b" + paren + "\\b";
+      return "\\b" + escapeRegExp(paren) + "\\b";
     }
   }
 
@@ -78,5 +79,22 @@ public class RegexUtil {
     String typesRegex = types.map(RegexUtil::escapeRegExp).join("|");
 
     return Pattern.compile(String.format("^((?:%s)(?:%s))", typesRegex, pattern));
+  }
+
+  public static Pattern createEnclosedPlaceholderRegextPattern(
+      JSLikeList<StringPair> types, String pattern) {
+    if (types.isEmpty()) {
+      return null;
+    }
+
+    StringJoiner regex = new StringJoiner("|");
+
+    for (StringPair type : types) {
+      String open = escapeRegExp(type.getLeft());
+      String close = escapeRegExp(type.getRight());
+      regex.add(String.format("^((%s)(%s)(%s))", open, pattern, close));
+    }
+
+    return Pattern.compile(regex.toString());
   }
 }

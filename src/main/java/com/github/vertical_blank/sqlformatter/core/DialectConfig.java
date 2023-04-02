@@ -1,7 +1,9 @@
 package com.github.vertical_blank.sqlformatter.core;
 
+import com.github.vertical_blank.sqlformatter.core.util.StringPair;
 import com.github.vertical_blank.sqlformatter.core.util.Util;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class DialectConfig {
@@ -16,6 +18,7 @@ public class DialectConfig {
   public final List<String> closeParens;
   public final List<String> indexedPlaceholderTypes;
   public final List<String> namedPlaceholderTypes;
+  public final List<StringPair> enclosedNamedPlaceholderTypes;
   public final List<String> operators;
 
   DialectConfig(
@@ -30,6 +33,7 @@ public class DialectConfig {
       List<String> closeParens,
       List<String> indexedPlaceholderTypes,
       List<String> namedPlaceholderTypes,
+      List<StringPair> enclosedNamedPlaceholderTypes,
       List<String> operators) {
     this.lineCommentTypes = Util.nullToEmpty(lineCommentTypes);
     this.reservedTopLevelWords = Util.nullToEmpty(reservedTopLevelWords);
@@ -42,6 +46,7 @@ public class DialectConfig {
     this.closeParens = Util.nullToEmpty(closeParens);
     this.indexedPlaceholderTypes = Util.nullToEmpty(indexedPlaceholderTypes);
     this.namedPlaceholderTypes = Util.nullToEmpty(namedPlaceholderTypes);
+    this.enclosedNamedPlaceholderTypes = Util.nullToEmpty(enclosedNamedPlaceholderTypes);
     this.operators = Util.nullToEmpty(operators);
   }
 
@@ -194,6 +199,25 @@ public class DialectConfig {
         .build();
   }
 
+  public DialectConfig withEnclosedNamedPlaceholderTypes(
+      List<StringPair> enclosedNamedPlaceholderTypes) {
+    return this.toBuilder().enclosedNamedPlaceholderTypes(enclosedNamedPlaceholderTypes).build();
+  }
+
+  public DialectConfig plusEnclosedNamedPlaceholderType(String openToken, String closeToken) {
+    return plusEnclosedNamedPlaceholderTypes(new StringPair(openToken, closeToken));
+  }
+
+  public DialectConfig plusEnclosedNamedPlaceholderTypes(StringPair... pairs) {
+    return this.plusEnclosedNamedPlaceholderTypes(Arrays.asList(pairs));
+  }
+
+  public DialectConfig plusEnclosedNamedPlaceholderTypes(List<StringPair> pairs) {
+    return this.toBuilder()
+        .enclosedNamedPlaceholderTypes(Util.concat(this.enclosedNamedPlaceholderTypes, pairs))
+        .build();
+  }
+
   public DialectConfig withOperators(List<String> Operators) {
     return this.toBuilder().operators(Operators).build();
   }
@@ -238,6 +262,7 @@ public class DialectConfig {
     private List<String> closeParens;
     private List<String> indexedPlaceholderTypes;
     private List<String> namedPlaceholderTypes;
+    private List<StringPair> enclosedNamedPlaceholderTypes;
     private List<String> operators;
 
     DialectConfigBuilder() {}
@@ -298,6 +323,11 @@ public class DialectConfig {
       return this;
     }
 
+    public DialectConfigBuilder enclosedNamedPlaceholderTypes(List<StringPair> pairs) {
+      this.enclosedNamedPlaceholderTypes = Collections.unmodifiableList(pairs);
+      return this;
+    }
+
     public DialectConfigBuilder operators(List<String> operators) {
       this.operators = operators;
       return this;
@@ -316,6 +346,7 @@ public class DialectConfig {
           closeParens,
           indexedPlaceholderTypes,
           namedPlaceholderTypes,
+          enclosedNamedPlaceholderTypes,
           operators);
     }
   }

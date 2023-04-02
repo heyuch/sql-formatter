@@ -75,4 +75,49 @@ public class SqlFormatterTest {
     String format = SqlFormatter.format("SELECT * FROM tbl WHERE foo = ?", Arrays.asList("'bar'"));
     assertEquals(format, "SELECT\n" + "  *\n" + "FROM\n" + "  tbl\n" + "WHERE\n" + "  foo = 'bar'");
   }
+
+  @Test
+  public void withEnclosedNamedParams() {
+    Map<String, String> namedParams = new HashMap<>();
+    namedParams.put("foo", "'bar'");
+
+    String format =
+        SqlFormatter.of(Dialect.TSql)
+            .extend(cfg -> cfg.plusEnclosedNamedPlaceholderType("{", "}"))
+            .format("SELECT * FROM tbl WHERE foo = {foo}", namedParams);
+
+    assertEquals("SELECT\n" + "  *\n" + "FROM\n" + "  tbl\n" + "WHERE\n" + "  foo = 'bar'", format);
+  }
+
+  /**
+   * Spring Expression Language (SpEL) style placeholder.
+   *
+   * <p>{@code #{ <expression string> }}
+   */
+  @Test
+  public void withSpELStyleEnclosedNamedParams() {
+    Map<String, String> namedParams = new HashMap<>();
+    namedParams.put("foo", "'bar'");
+
+    String format =
+        SqlFormatter.of(Dialect.TSql)
+            .extend(cfg -> cfg.plusEnclosedNamedPlaceholderType("#{", "}"))
+            .format("SELECT * FROM tbl WHERE foo = #{foo}", namedParams);
+
+    assertEquals("SELECT\n" + "  *\n" + "FROM\n" + "  tbl\n" + "WHERE\n" + "  foo = 'bar'", format);
+  }
+
+  @Test
+  public void withMultiEnclosedNamedParams() {
+    Map<String, String> namedParams = new HashMap<>();
+    namedParams.put("foo", "'bar'");
+
+    String format =
+        SqlFormatter.of(Dialect.TSql)
+            .extend(cfg -> cfg.plusEnclosedNamedPlaceholderType("#{", "}"))
+            .extend(cfg -> cfg.plusEnclosedNamedPlaceholderType("${", "}"))
+            .format("SELECT * FROM tbl WHERE foo = #{foo}", namedParams);
+
+    assertEquals("SELECT\n" + "  *\n" + "FROM\n" + "  tbl\n" + "WHERE\n" + "  foo = 'bar'", format);
+  }
 }
